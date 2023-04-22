@@ -1,6 +1,6 @@
 import java.util.Random;
 
-public class CommandGenerator {
+public class CommandGenerator extends Thread{
     CommandGenerator(int length){
         this.length=length;
     }
@@ -18,5 +18,10 @@ public class CommandGenerator {
         String generatedString = buffer.toString();
 
         System.out.println(generatedString);
+    }
+
+    @Override
+    public void run() {
+        //смотреть по влагу в HandleRegistry выполнилась ли обработка строки и вставлять туда новую через update command
     }
 }
