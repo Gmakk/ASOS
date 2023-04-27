@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Queue;
+
 public class HandlerRegistry {
 
     private class UpperCaseHandler extends Thread {
@@ -8,28 +10,29 @@ public class HandlerRegistry {
 
 
 
-            //установить блокировку
+            //установить блокировку если не установлена, ждать если устрановлена
 
 
 
             //изменить один символ
-            System.out.println(HandlerRegistry.this.sharedString.length());
+            System.out.println(HandlerRegistry.this.command.getCommand());
+
+            //вызвать процесс смены доставания нового процесса из очрееди и засовывания текщего в конец
         }
     }
 
     private static int maxNumber;
-    //private static int currentNumber;
-    private ArrayList<UpperCaseHandler> handlers;
-    private volatile String sharedString;
+    private Queue<UpperCaseHandler> handlers;
+    private Command command;
 
     public void updateCommand(String sharedString){
-        this.sharedString = sharedString;
+        this.command.updateCommand(sharedString);
         maxNumber = sharedString.length();
 
 
         //удалить лишние обработчики
     }
-    void addHandler(){
+    public void addHandler(){
         if(handlers.size()>=maxNumber){
             System.out.println("Error! the number of handlers will exceed the number of characters in the command");
             return;
@@ -38,5 +41,19 @@ public class HandlerRegistry {
         handlers.add(newHandler);
         //запускать его и делать join?
         return;
+    }
+
+    public boolean checkIsHandled(){
+        //пройтись по очереди обработчиков и посмотреть подняты ли все регистры
+        return true;
+    }
+
+    public void setNextHandler(){
+        if(checkIsHandled() == true){
+            System.out.println("Последний обработчик завершил работу");
+            //вызвать CommandGenerator??? и сделать что-то с обработчиками?
+        }else{
+            ////
+        }
     }
 }

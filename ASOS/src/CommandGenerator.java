@@ -1,6 +1,10 @@
 import java.util.Random;
 
 public class CommandGenerator extends Thread{
+
+    //сделать listenner флага, который будет подниматься checkIsHandled() ???
+
+
     CommandGenerator(int length){
         this.length=length;
     }
