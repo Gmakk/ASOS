@@ -2,14 +2,7 @@ import java.util.Random;
 
 public class CommandGenerator extends Thread{
 
-    //сделать listenner флага, который будет подниматься checkIsHandled() ???
-
-
-    CommandGenerator(int length){
-        this.length=length;
-    }
-    int length;
-    void generateNewCommand(){
+    public static String generateNewCommand(int length){
         int leftLimit = 97; // a
         int rightLimit = 122; // z
         Random random = new Random();
@@ -21,7 +14,7 @@ public class CommandGenerator extends Thread{
         }
         String generatedString = buffer.toString();
 
-        System.out.println(generatedString);
+        return generatedString;
     }
 
     @Override

@@ -1,5 +1,4 @@
 public class Command {
-    boolean isBusy = false;
     private volatile String sharedString;
 
     public void updateCommand(String sharedString) {
