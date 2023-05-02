@@ -44,22 +44,15 @@ public class HandlerRegistry {
                         condition.await();
                 }
 
-
-                //проверить substring когла конец меньше начала
-
-
                 //меняем регистр буквы
-                String capitalized = command.getCommand().substring(0, letterNumber - 2) +
+                String capitalized = command.getCommand().substring(0, letterNumber - 2) +   //проверить substring когла конец меньше начала
                         command.getCommand().substring(letterNumber - 1, 1).toUpperCase() +
-                        command.getCommand().substring(letterNumber);
-                command.updateCommand(capitalized);
-
-                //какой длины генерить строку
-
+                            command.getCommand().substring(letterNumber);
+                                command.updateCommand(capitalized);
 
                 //проверяем все ли отработали, если да то updateCommand
-                if(checkIsHandled())
-                    updateCommand(CommandGenerator.generateNewCommand(maxNumber));
+                if(IsHandled())
+                    updateCommand(CommandGenerator.generateNewCommand(maxNumber));    //какой длины генерить строку
 
                 //сообщаем остальным процессам, для которых вызван condition.await(), что ожидание завершено
                 condition.signalAll();
@@ -68,7 +61,12 @@ public class HandlerRegistry {
                 lock.unlock();
             }
 
-            //вызвать процесс смены доставания нового процесса из очрееди и засовывания текщего в конец
+            //кладем текущий обработчик в конец очереди
+            handlers.add(handlers.poll());
+            //запускаем новый поток-обработчик
+            startProcess();
+            //прерываем выполнявшийс до этого поток
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -144,14 +142,12 @@ public class HandlerRegistry {
     }
 
     //проверка отработали ли все обработчики
-    public boolean checkIsHandled(){
+    public boolean IsHandled(){
 
-
-
-        //пройтись по очереди обработчиков и посмотреть подняты ли все регистры
-
-
-
+        for (UpperCaseHandler handler : handlers){
+            if(!Character.isUpperCase(command.getCommand().charAt(handler.getLetterNumber())))
+                return false;
+        }
         return true;
     }
 
@@ -161,7 +157,6 @@ public class HandlerRegistry {
             System.out.println("Error! There is no handlers");
             return;
         }
-
         handlers.peek().start();
     }
 
