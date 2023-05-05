@@ -1,4 +1,6 @@
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,6 +17,8 @@ public class HandlerRegistry {
         this.maxNumber = maxNumber;
         lock = new ReentrantLock();
         condition = lock.newCondition();
+        handlers = new LinkedList<>();
+        command = new Command();
     }
 
     private class UpperCaseHandler extends Thread {
@@ -65,21 +69,21 @@ public class HandlerRegistry {
             handlers.add(handlers.poll());
             //запускаем новый поток-обработчик
             startProcess();
-            //прерываем выполнявшийс до этого поток
+            //прерываем выполнявшийся до этого поток
             Thread.currentThread().interrupt();
         }
     }
 
     //установка новой строки для изменения
     public void updateCommand(String sharedString){
-
+        //првоерить размер >0
 
         //что делать с блокировкой, если не runnable?
         // (вроде нормально просто блокировать для потоков объект)
 
 
 
-        //получем доступ к разделяемому ресурсу
+        //получаем доступ к разделяемому ресурсу
         boolean isLocked = lock.tryLock();
         try {
             //если занят, то ждем освобождения
@@ -134,7 +138,6 @@ public class HandlerRegistry {
         UpperCaseHandler newHandler = new UpperCaseHandler(letterNumber);
         handlers.add(newHandler);
 
-
         //запускать его и делать join?
 
 
@@ -153,6 +156,11 @@ public class HandlerRegistry {
 
     //run первого в очереди(остальыне вызовутся по цепочке)
     public void startProcess(){
+        if(command.isNull() || command.getLength() == 0){
+            System.out.println("Error! There is command. \nCreating new one...");
+            updateCommand(CommandGenerator.generateNewCommand(maxNumber));
+            return;
+        }
         if (handlers.isEmpty()){
             System.out.println("Error! There is no handlers");
             return;
@@ -160,7 +168,16 @@ public class HandlerRegistry {
         handlers.peek().start();
     }
 
-//    public void setNextHandler(){
+    @Override
+    public String toString() {
+        return "HandlerRegistry{" +
+                "\nMax number: " + maxNumber +
+                "\nCommand: " + command.getCommand() +
+                "\nIs blocked: " + lock.isLocked() +
+                '}';
+    }
+
+    //    public void setNextHandler(){
 //        if(checkIsHandled() == true){
 //            System.out.println("Последний обработчик завершил работу");
 //            //вызвать CommandGenerator??? и сделать что-то с обработчиками?

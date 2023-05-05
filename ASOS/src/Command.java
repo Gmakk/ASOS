@@ -12,4 +12,8 @@ public class Command {
     public int getLength(){
         return sharedString.length();
     }
+
+    public boolean isNull(){
+        return sharedString == null;
+    }
 }

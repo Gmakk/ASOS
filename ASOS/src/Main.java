@@ -15,10 +15,12 @@
 
 
 public class  Main {
-
-    public volatile String globalString;
-
     public static void main(String[] args) {
-
+        HandlerRegistry reg = new HandlerRegistry(5);
+        for(int i=0;i<5;i++)
+            reg.addHandler(i+1);
+        System.out.println(reg);
+        reg.startProcess();
+        System.out.println(reg);
     }
 }
