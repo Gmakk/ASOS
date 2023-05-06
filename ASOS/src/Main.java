@@ -20,7 +20,10 @@ public class  Main {
         for(int i=0;i<5;i++)
             reg.addHandler(i+1);
         System.out.println(reg);
-        reg.startProcess();
+//        for (int i=0;i<5;i++) {
+            reg.startProcess();
+//            reg.swapHandlers();
+//        }
         System.out.println(reg);
     }
 }

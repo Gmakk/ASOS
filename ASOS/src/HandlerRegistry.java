@@ -22,7 +22,7 @@ public class HandlerRegistry {
     }
 
     private class UpperCaseHandler extends Thread {
-        //Поле, овтечающее за то, какой символ он изменяет
+        //Поле, отвечающее за то, какой символ он изменяет
         private int letterNumber;
         UpperCaseHandler(int letterNumber){
             this.letterNumber = letterNumber;
@@ -39,55 +39,71 @@ public class HandlerRegistry {
 
         @Override
         public void run() {
-            //получем доступ к разделяемому ресурсу
-            boolean isLocked = lock.tryLock();
+            System.out.println("Process "+ letterNumber + " started");
+            //получаем доступ к разделяемому ресурсу
+            if(letterNumber == 2)//для проверки
+                System.out.println(2);
+            //boolean isLocked = lock.tryLock();
+            lock.lock();
             try {
+
                 //если занят, то ждем освобождения
-                if (!isLocked) {
+                if (!lock.isLocked()) {
+                    System.out.println("Process "+ letterNumber + " is waiting");
                     while (lock.isLocked())
                         condition.await();
+                    lock.tryLock();
+                    System.out.println("Process "+ letterNumber + " has finished waiting");
+                }
+                if(lock.isLocked())
+                    System.out.println("Command is captured by " + letterNumber + " process");
+
+
+                //меняем нужную строку
+                String capitalized;
+                capitalized = command.getCommand().substring(0, letterNumber - 1) +
+                        command.getCommand().substring(letterNumber - 1, letterNumber).toUpperCase() +
+                        command.getCommand().substring(letterNumber);
+                command.updateCommand(capitalized);
+                System.out.println("Process "+ letterNumber + " changed its letter");
+
+
+                if(IsHandled())
+                    System.out.println(HandlerRegistry.this.toString());//вывод по окончанию
+                else {
+                    swapHandlers();//кладем текущий обработчик в конец очереди
+                    startProcess();//запускаем новый поток-обработчик
                 }
 
-                //меняем регистр буквы
-                String capitalized = command.getCommand().substring(0, letterNumber - 2) +   //проверить substring когла конец меньше начала
-                        command.getCommand().substring(letterNumber - 1, 1).toUpperCase() +
-                            command.getCommand().substring(letterNumber);
-                                command.updateCommand(capitalized);
 
-                //проверяем все ли отработали, если да то updateCommand
-                if(IsHandled())
-                    updateCommand(CommandGenerator.generateNewCommand(maxNumber));    //какой длины генерить строку
-
-                //сообщаем остальным процессам, для которых вызван condition.await(), что ожидание завершено
-                condition.signalAll();
+//                try {
+//                    condition.awaitNanos(1000000000);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
             }catch (InterruptedException e){}
-            finally{
+            finally {
+                //разблокируем общий ресурс
                 lock.unlock();
+                System.out.println("Command unlocked by " + letterNumber + " process");
             }
 
-            //кладем текущий обработчик в конец очереди
-            handlers.add(handlers.poll());
-            //запускаем новый поток-обработчик
-            startProcess();
+
             //прерываем выполнявшийся до этого поток
             Thread.currentThread().interrupt();
+            if(Thread.currentThread().isInterrupted())
+                System.out.println("Process "+ letterNumber + " ended");
         }
     }
 
     //установка новой строки для изменения
     public void updateCommand(String sharedString){
-        //првоерить размер >0
-
-        //что делать с блокировкой, если не runnable?
-        // (вроде нормально просто блокировать для потоков объект)
-
-
-
         //получаем доступ к разделяемому ресурсу
         boolean isLocked = lock.tryLock();
         try {
             //если занят, то ждем освобождения
             if (!isLocked) {
+                System.out.println("Waiting to change command");
                 while (lock.isLocked())
                     condition.await();
             }
@@ -99,11 +115,6 @@ public class HandlerRegistry {
             Iterator<UpperCaseHandler> iterator = handlers.iterator();
             //удалить лишние обработчики которые меняют несуществующие символы
             while (iterator.hasNext()) {
-
-
-                //проверить не пролистывается ли несколько раз через next
-
-
                 if(iterator.next().getLetterNumber() > maxNumber) {
                     iterator.next().interrupt();
                     iterator.remove();
@@ -116,12 +127,6 @@ public class HandlerRegistry {
         finally{
             lock.unlock();
         }
-
-
-
-
-
-
     }
 
     //добавление обработчика
@@ -130,36 +135,31 @@ public class HandlerRegistry {
             System.out.println("Error! The number of handlers will exceed the number of characters in the command");
             return;
         }
-        //проверка на то что обработчик меняет существующйи символ
+        //проверка на то что обработчик меняет существующий символ
         if(maxNumber< letterNumber){
             System.out.println("Error! The processed letter does not exist");
             return;
         }
         UpperCaseHandler newHandler = new UpperCaseHandler(letterNumber);
         handlers.add(newHandler);
-
-        //запускать его и делать join?
-
-
-
     }
 
     //проверка отработали ли все обработчики
     public boolean IsHandled(){
 
         for (UpperCaseHandler handler : handlers){
-            if(!Character.isUpperCase(command.getCommand().charAt(handler.getLetterNumber())))
+            if(!Character.isUpperCase(command.getCommand().charAt(handler.getLetterNumber()-1)))
                 return false;
         }
         return true;
     }
 
-    //run первого в очереди(остальыне вызовутся по цепочке)
+    //run первого в очереди(остальные вызовутся по цепочке)
     public void startProcess(){
         if(command.isNull() || command.getLength() == 0){
-            System.out.println("Error! There is command. \nCreating new one...");
+            System.out.println("Error! There is no command. \nCreating new one...");
             updateCommand(CommandGenerator.generateNewCommand(maxNumber));
-            return;
+            //return;
         }
         if (handlers.isEmpty()){
             System.out.println("Error! There is no handlers");
@@ -170,19 +170,14 @@ public class HandlerRegistry {
 
     @Override
     public String toString() {
-        return "HandlerRegistry{" +
+        return "\n\nHandlerRegistry{" +
                 "\nMax number: " + maxNumber +
                 "\nCommand: " + command.getCommand() +
                 "\nIs blocked: " + lock.isLocked() +
-                '}';
+                "}\n\n";
     }
 
-    //    public void setNextHandler(){
-//        if(checkIsHandled() == true){
-//            System.out.println("Последний обработчик завершил работу");
-//            //вызвать CommandGenerator??? и сделать что-то с обработчиками?
-//        }else{
-//            ////
-//        }
-//    }
+    public void swapHandlers(){
+        handlers.add(handlers.poll());
+    }
 }
