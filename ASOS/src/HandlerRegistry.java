@@ -40,22 +40,28 @@ public class HandlerRegistry {
         @Override
         public void run() {
             System.out.println("Process "+ letterNumber + " started");
-            //получаем доступ к разделяемому ресурсу
-            if(letterNumber == 2)//для проверки
-                System.out.println(2);
-            //boolean isLocked = lock.tryLock();
-            lock.lock();
-            try {
 
+
+            //boolean isLocked = lock.tryLock();
+            //lock.lock();
+            try {
+//                if(letterNumber == 2)//для проверки
+//                    System.out.println(2);
                 //если занят, то ждем освобождения
-                if (!lock.isLocked()) {
+                if (lock.isLocked()) {
                     System.out.println("Process "+ letterNumber + " is waiting");
-                    while (lock.isLocked())
-                        condition.await();
-                    lock.tryLock();
+
+                    while (lock.isLocked()) {
+                        //if(lock.isLocked())
+                       try{ condition.await();}
+                       catch (IllegalMonitorStateException e){
+                           System.out.println("Is locked: " + lock.isLocked());
+                       }
+                    }
                     System.out.println("Process "+ letterNumber + " has finished waiting");
                 }
-                if(lock.isLocked())
+                //получаем доступ к разделяемому ресурсу
+                if(lock.tryLock())
                     System.out.println("Command is captured by " + letterNumber + " process");
 
 
@@ -76,6 +82,12 @@ public class HandlerRegistry {
                 }
 
 
+                try {
+                    sleep(1);
+                } catch (InterruptedException e) {
+                    System.out.println(e);
+                }
+
 //                try {
 //                    condition.awaitNanos(1000000000);
 //                } catch (InterruptedException e) {
@@ -84,7 +96,11 @@ public class HandlerRegistry {
             }catch (InterruptedException e){}
             finally {
                 //разблокируем общий ресурс
-                lock.unlock();
+                try {
+                    lock.unlock();
+                }catch (IllegalMonitorStateException e){}
+
+                //condition.signalAll();
                 System.out.println("Command unlocked by " + letterNumber + " process");
             }
 
