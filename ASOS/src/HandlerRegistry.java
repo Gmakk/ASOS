@@ -1,6 +1,5 @@
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -21,25 +20,25 @@ public class HandlerRegistry {
         command = new Command();
     }
 
-    private class UpperCaseHandler extends Thread {
+    public class UpperCaseHandler extends Thread {
         //Поле, отвечающее за то, какой символ он изменяет
-        private int letterNumber;
-        UpperCaseHandler(int letterNumber){
-            this.letterNumber = letterNumber;
+        private int index;
+        UpperCaseHandler(int index){
+            this.index = index;
         }
-        public void setLetterNumber(int letterNumber) {
-            if(letterNumber > 0)
-                this.letterNumber = letterNumber;
+        public void setIndex(int index) {
+            if(index > 0)
+                this.index = index;
             else
-                System.out.println("Letter index should be positive");
+                System.out.println("Index should be positive");
         }
-        public int getLetterNumber() {
-            return letterNumber;
+        public int getIndex() {
+            return index;
         }
 
         @Override
         public void run() {
-            System.out.println("Process "+ letterNumber + " started");
+            System.out.println("Process "+ index + " started");
 
 
             //boolean isLocked = lock.tryLock();
@@ -49,7 +48,7 @@ public class HandlerRegistry {
 //                    System.out.println(2);
                 //если занят, то ждем освобождения
                 if (lock.isLocked()) {
-                    System.out.println("Process "+ letterNumber + " is waiting");
+                    System.out.println("Process "+ index + " is waiting");
 
                     while (lock.isLocked()) {
                         //if(lock.isLocked())
@@ -58,29 +57,32 @@ public class HandlerRegistry {
                            System.out.println("Is locked: " + lock.isLocked());
                        }
                     }
-                    System.out.println("Process "+ letterNumber + " has finished waiting");
+                    System.out.println("Process "+ index + " has finished waiting");
                 }
                 //получаем доступ к разделяемому ресурсу
                 if(lock.tryLock())
-                    System.out.println("Command is captured by " + letterNumber + " process");
+                    System.out.println("Command is captured by " + index + " process");
 
 
-                //меняем нужную строку
-                String capitalized;
-                capitalized = command.getCommand().substring(0, letterNumber - 1) +
-                        command.getCommand().substring(letterNumber - 1, letterNumber).toUpperCase() +
-                        command.getCommand().substring(letterNumber);
-                command.updateCommand(capitalized);
-                System.out.println("Process "+ letterNumber + " changed its letter");
 
+                int next= findNextUnhandled();
+                if(next != -1) {
+                    //меняем нужную строку
+                    String capitalized;
+                    capitalized = command.getCommand().substring(0, next - 1) +
+                            command.getCommand().substring(next - 1, next).toUpperCase() +
+                            command.getCommand().substring(next);
+                    command.updateCommand(capitalized);
+                    System.out.println("Process " + index + " changed its letter");
 
-                if(IsHandled())
+                }
+                if(isHandled()) {
+                    System.out.println("Command is handled");
                     System.out.println(HandlerRegistry.this.toString());//вывод по окончанию
-                else {
+                }else{
                     swapHandlers();//кладем текущий обработчик в конец очереди
                     startProcess();//запускаем новый поток-обработчик
                 }
-
 
                 try {
                     sleep(1);
@@ -101,47 +103,39 @@ public class HandlerRegistry {
                 }catch (IllegalMonitorStateException e){}
 
                 //condition.signalAll();
-                System.out.println("Command unlocked by " + letterNumber + " process");
+                System.out.println("Command unlocked by " + index + " process");
             }
 
 
             //прерываем выполнявшийся до этого поток
             Thread.currentThread().interrupt();
             if(Thread.currentThread().isInterrupted())
-                System.out.println("Process "+ letterNumber + " ended");
+                System.out.println("Process "+ index + " ended");
         }
     }
 
     //установка новой строки для изменения
     public void updateCommand(String sharedString){
         //получаем доступ к разделяемому ресурсу
-        boolean isLocked = lock.tryLock();
+
         try {
             //если занят, то ждем освобождения
-            if (!isLocked) {
+            if (lock.isLocked()) {
                 System.out.println("Waiting to change command");
                 while (lock.isLocked())
                     condition.await();
             }
-
+            lock.tryLock();
             //меняем команду
             this.command.updateCommand(sharedString);
             maxNumber = sharedString.length();
 
-            Iterator<UpperCaseHandler> iterator = handlers.iterator();
-            //удалить лишние обработчики которые меняют несуществующие символы
-            while (iterator.hasNext()) {
-                if(iterator.next().getLetterNumber() > maxNumber) {
-                    iterator.next().interrupt();
-                    iterator.remove();
-                }
-            }
 
-            //сообщаем остальным процессам, для которых вызван condition.await(), что ожидание завершено
-            condition.signalAll();
         }catch (InterruptedException e){}
         finally{
             lock.unlock();
+            //сообщаем остальным процессам, для которых вызван condition.await(), что ожидание завершено
+            //condition.signalAll();
         }
     }
 
@@ -161,13 +155,18 @@ public class HandlerRegistry {
     }
 
     //проверка отработали ли все обработчики
-    public boolean IsHandled(){
+    public boolean isHandled(){
+        if(command.getCommand().equals(command.getCommand().toUpperCase()))
+            return true;
+        else return false;
+    }
 
-        for (UpperCaseHandler handler : handlers){
-            if(!Character.isUpperCase(command.getCommand().charAt(handler.getLetterNumber()-1)))
-                return false;
+    public int findNextUnhandled(){
+        for(int i = 0;i<command.getLength();i++){
+            if(Character.isLowerCase(command.getCommand().charAt(i)))
+                return i+1;
         }
-        return true;
+        return -1;
     }
 
     //run первого в очереди(остальные вызовутся по цепочке)
@@ -194,6 +193,6 @@ public class HandlerRegistry {
     }
 
     public void swapHandlers(){
-        handlers.add(handlers.poll());
+        handlers.add(new UpperCaseHandler(handlers.poll().index));
     }
 }

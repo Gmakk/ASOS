@@ -16,14 +16,11 @@
 
 public class  Main {
     public static void main(String[] args) {
-        HandlerRegistry reg = new HandlerRegistry(5);
-        for(int i=0;i<5;i++)
+        HandlerRegistry reg = new HandlerRegistry(10);//создаем регистр и указываем длину строки
+        for(int i=0;i<5;i++)//создаем N обработчиков
             reg.addHandler(i+1);
         System.out.println(reg);
-//        for (int i=0;i<5;i++) {
-            reg.startProcess();
-//            reg.swapHandlers();
-//        }
+        reg.startProcess();
         System.out.println(reg);
     }
 }
