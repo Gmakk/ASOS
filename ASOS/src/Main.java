@@ -12,38 +12,41 @@
 Команды должны генерироваться автоматически процессом генератором, который так же имеет доступ в разделяемую память.
  */
 
+//обработчики должно обработать все символы
+
+//тест зависимости времени обработки 1000 символов от количества обработчиков
+//1 10 100 500 1000 обработчиков
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-public class  Main {
-    public static void main(String[] args){
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        System.out.print("Enter number of symbols in command: ");
+        int symbolsNumber = in.nextInt();
+        //int symbolsNumber = 1000;
+        System.out.print("Enter number of handlers: ");
+        int handlersNumber = in.nextInt();
+        //int handlersNumber = 1000;
         try {
             PrintWriter writer = new PrintWriter("Time comparison.txt");
 
-            //КОГДА ОБРАБОТЧИКОВ МЕНЬШЕ ЧЕМ ДЛИНА КОМАНДЫ
-
-            long time1 = System.currentTimeMillis();//получаем начальное время
-            HandlerRegistry reg1 = new HandlerRegistry(1000);//создаем регистр и указываем длину строки
-            for (int i = 0; i < 100; i++)//создаем N обработчиков
-                reg1.addHandler(i + 1);
-            System.out.println(reg1);
-            reg1.startProcess();
-            System.out.println(reg1);
-            writer.println("Time with lack of handlers:" + (System.currentTimeMillis() - time1));//сравниваем с конечным
-
-            //КОГДА ОБРАБОТЧКОВ ХВАТАЕТ НА КОМАНДУ
-
-            long time2 = System.currentTimeMillis();//получаем начальное время
-            HandlerRegistry reg2 = new HandlerRegistry(1000);//создаем регистр и указываем длину строки
-            for (int i = 0; i < 1000; i++)//создаем N обработчиков
-                reg2.addHandler(i + 1);
-            System.out.println(reg2);
-            reg2.startProcess();
-            System.out.println(reg2);
-            writer.println("Regular time:" + (System.currentTimeMillis() - time2));//сравниваем с конечным
+            writer.println("Command:" + symbolsNumber);
+            writer.println("Number of handlers:" + handlersNumber);
+            long totalTime = 0;
+            long time = System.currentTimeMillis();//получаем начальное время
+            HandlerRegistry reg = new HandlerRegistry(symbolsNumber);//создаем регистр и указываем длину строки
+            for (int j = 0; j < handlersNumber; j++)//создаем N обработчиков
+                reg.addHandler(j + 1);
+            System.out.println(reg);
+            reg.startProcess();
+            System.out.println(reg);
+            writer.println("Time:" + (System.currentTimeMillis() - time));//сравниваем с конечным
 
             writer.close();
-        }catch (FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             System.out.println("Incorrect file");
         }
     }

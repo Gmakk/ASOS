@@ -10,7 +10,7 @@ public class HandlerRegistry {
     private Command command;
 
     ReentrantLock lock;  // блокировка
-    Condition condition;  // условие блокировки
+    Condition condition;  // состояние блокировки
 
     HandlerRegistry(int maxNumber){
         this.maxNumber = maxNumber;
