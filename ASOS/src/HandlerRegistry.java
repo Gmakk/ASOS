@@ -40,12 +40,7 @@ public class HandlerRegistry {
         public void run() {
             System.out.println("Process "+ index + " started");
 
-
-            //boolean isLocked = lock.tryLock();
-            //lock.lock();
             try {
-//                if(letterNumber == 2)//для проверки
-//                    System.out.println(2);
                 //если занят, то ждем освобождения
                 if (lock.isLocked()) {
                     System.out.println("Process "+ index + " is waiting");
@@ -90,11 +85,6 @@ public class HandlerRegistry {
                     System.out.println(e);
                 }
 
-//                try {
-//                    condition.awaitNanos(1000000000);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
             }catch (InterruptedException e){}
             finally {
                 //разблокируем общий ресурс
@@ -102,10 +92,8 @@ public class HandlerRegistry {
                     lock.unlock();
                 }catch (IllegalMonitorStateException e){}
 
-                //condition.signalAll();
                 System.out.println("Command unlocked by " + index + " process");
             }
-
 
             //прерываем выполнявшийся до этого поток
             Thread.currentThread().interrupt();
@@ -134,8 +122,6 @@ public class HandlerRegistry {
         }catch (InterruptedException e){}
         finally{
             lock.unlock();
-            //сообщаем остальным процессам, для которых вызван condition.await(), что ожидание завершено
-            //condition.signalAll();
         }
     }
 
