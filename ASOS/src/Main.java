@@ -12,7 +12,7 @@
 Команды должны генерироваться автоматически процессом генератором, который так же имеет доступ в разделяемую память.
  */
 
-//обработчики должно обработать все символы
+//обработчики должны обработать все символы
 
 //тест зависимости времени обработки 1000 символов от количества обработчиков
 //1 10 100 500 1000 обработчиков
@@ -20,8 +20,12 @@
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Main {
+    public static CountDownLatch latch = new CountDownLatch(1);//для ожидания завершения обработки и записи временно отметки
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
         System.out.print("Enter number of symbols in command: ");
@@ -43,11 +47,14 @@ public class Main {
             System.out.println(reg);
             reg.startProcess();
             System.out.println(reg);
+            latch.await();//ожидаем сигнала от последнего обработчика
             writer.println("Time:" + (System.currentTimeMillis() - time));//сравниваем с конечным
-
             writer.close();
         } catch (FileNotFoundException e) {
             System.out.println("Incorrect file");
+        }
+        catch (InterruptedException e) {
+            System.out.println("Interrupted while waiting");
         }
     }
 }

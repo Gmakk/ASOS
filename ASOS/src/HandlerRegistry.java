@@ -10,7 +10,7 @@ public class HandlerRegistry {
     private Command command;
 
     ReentrantLock lock;  // блокировка
-    Condition condition;  // состояние блокировки
+    Condition condition;  // условие блокировки
 
     HandlerRegistry(int maxNumber){
         this.maxNumber = maxNumber;
@@ -74,6 +74,7 @@ public class HandlerRegistry {
                 if(isHandled()) {
                     System.out.println("Command is handled");
                     System.out.println(HandlerRegistry.this.toString());//вывод по окончанию
+                    Main.latch.countDown();
                 }else{
                     swapHandlers();//кладем текущий обработчик в конец очереди
                     startProcess();//запускаем новый поток-обработчик
